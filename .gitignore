@@ -1,0 +1,6 @@
+data/*
+!data/textalker4d_metric_regions.pkl
+!data/dummy_upper_and_lower_face_keypoints.pkl
+!data/dummy_region_indices_dict.pkl
+outputs/
+trained_models/

@@ -1,0 +1,24 @@
+# @package _global_
+
+model:
+  type: "TransformerKeypointAdaIN"
+  input_dim: 128
+  embed_dim: 512
+  n_heads: 8
+  n_layers: 8
+  mlp_ratio: 2
+  align_mask_width: 1
+  use_learnable_pe: true
+  use_keypoint_condition: true
+  drop_lmks_prob: 0
+  use_keypoint_style_encoder: True
+  style_only: False
+  keypoint_style_encoder:
+    d_style: ${model.embed_dim} # Size of the output style vector
+    conv_feature_dim: 512
+    input_dim: ${model.input_dim} # Input dimension - extra style keypoints automatically extend this dimension
+    use_extra_style_keypoints: True
+    extra_style_processed_keypoint_path:  "preprocessed_data/dataset_keypoints_lower.pkl"
+    # extra_style_keypoint_index_path: "dummy_upper_and_lower_face_keypoints.pkl"
+
+data:

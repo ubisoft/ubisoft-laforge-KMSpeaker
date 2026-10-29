@@ -1,0 +1,126 @@
+defaults:
+  - _self_  # This means that parameters on this file can be overridden by configurations on the following folders/config files:
+
+base_logdir: 'trained_models'
+data_root: 'data'
+exp_name: km_speaker_training
+
+now_dir: ${now:%Y_%m_%d}/${now:%H_%M_%S_%f}
+logdir: ${base_logdir}/${now_dir}
+data:
+  metadata_path: "dataset_metadata.csv"
+  base_audio_path: "dataset/audio"
+  template_path: "dataset/template"
+  audio_pickle_path: "preprocessed_data/dataset_w2vbert_hidden_states.pkl"
+  animation_dataset_path: "preprocessed_data/dataset_pca_coefficients.pkl"
+  pca_path: "preprocessed_data/pca.pkl"
+  landmark_pickle_path: "preprocessed_data/dataset_keypoints_lower.pkl" ## Preprocessed dataset keypoints 
+  keypoint_index_pickle: "dummy_upper_and_lower_face_keypoints.pkl" ## Keypoints indices 
+
+  data_root: ${data_root}
+  animation_fps: 60
+  target_training_animation_fps: ${data.animation_fps} # If different from animation_fps, the model will be trained to predict at this fps and the audio features will be up/downsampled accordingly
+  audio_feature_fps: 50
+  sequence_length: 200 
+  decode_pca_in_dataset: True # Used for mesh space losses
+  batch_size: 32
+  num_workers: 0
+  pin_memory: True
+  use_keypoint: True # => Used pre_processed keypoints
+  disentangle_audio_exp_keypoint: ${trainer.audio_keypoint_disentanglement}
+  disentanglement_config: ${audio_keypoint_disentanglement.disentanglement_config}
+  target_codes: "pca"
+  keypoint_style_encoder:
+    extra_style_processed_keypoint_path: ${model.keypoint_style_encoder.extra_style_processed_keypoint_path}
+    use_extra_style_keypoints: ${model.keypoint_style_encoder.use_extra_style_keypoints}
+
+audio_encoder:
+  output_fps: ${data.animation_fps}
+  audio_model_type: "w2v-bert"
+  audio_model_name: "facebook/w2v-bert-2.0"
+  combination_strategy: "scalar"
+  combination_use_softmax: False
+  audio_model_fps: ${data.audio_feature_fps}
+  use_cached_activations: True
+  cached_n_hidden_layers: 25
+  cached_n_hidden_dim: 1024
+  model_dim: ${model.embed_dim}
+  data_sequence_length: ${data.sequence_length}
+  cache_dir: "${data_root}/audio_model"
+
+model:
+  type: "TransformerKeypointAdaIN"
+  pca_dim: 128
+  input_dim: ${model.pca_dim}
+  embed_dim: 512
+  n_heads: 8
+  n_layers: 8
+  mlp_ratio: 2
+  time_embed_dim: 32
+  align_mask_width: 1
+  use_learnable_pe: true
+  use_keypoint_condition: true
+  drop_lmks_prob: 0
+  checkpoint: 
+  use_keypoint_style_encoder: True
+  sequence_length: ${data.sequence_length}
+  style_only: False
+  keypoint_style_encoder:
+    d_style: ${model.embed_dim} # Size of the output style vector
+    conv_feature_dim: 512
+    input_dim: ${model.input_dim} # Input dimension - extra style keypoints automatically extend this dimension
+    use_extra_style_keypoints: True
+    extra_style_processed_keypoint_path:  "preprocessed_data/dataset_keypoints_lower.pkl"
+
+
+
+training_target: x1_predictor  # velocity_field, x1_predictor
+
+optimizer:
+  type: "AdamW"
+  lr: 1e-4
+  weight_decay: 1e-6
+  lr_null: ${optimizer.lr}
+
+lr_scheduler:
+  type: "CosineAnnealingLR"
+  eta_min: 0
+
+trainer:
+  type: flow_matching
+  total_training_steps: 1_000_000
+  log_iter: 100
+  device: "cuda"
+  save_iter: 2000
+  use_tqdm: True
+  max_checkpoints: 2
+  milestone_interval: 10_000  # Keep every X steps permanently
+  clip_grad_norm: 1
+  use_mesh_loss: True
+  audio_keypoint_disentanglement: True
+  cfg_probability: 0.1
+  use_keypoint_style_encoder: ${model.use_keypoint_style_encoder}
+  target_codes: ${data.target_codes}
+
+audio_keypoint_disentanglement:
+  metadata: "preprocessed_data/disentanglement_region_masks.pkl"
+  audio_type: "mask_beta_1.0" # linear, inverse, exponential
+  keypoint_type: "mask_beta_1.0" # linear, inverse, exponential
+  disentanglement_config:
+    - 1 # Right audio, wrong keypoints
+    - 2 # Wrong audio, right keypoints
+    
+loss_weights:
+  flow_matching_loss: 0
+  smooth_loss: 0
+  vertex_mse_loss: 100
+  vertex_mse_loss_audio: 100
+  vertex_mse_loss_keypoints: 100
+  velocity_loss: 100
+  velocity_loss_audio: 100
+  velocity_loss_keypoints: 100
+  kl_div_loss: 1e-6
+
+hydra:
+  run:
+    dir: ${logdir}
