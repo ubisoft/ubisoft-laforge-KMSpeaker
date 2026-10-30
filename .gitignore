@@ -4,3 +4,6 @@ data/*
 !data/dummy_region_indices_dict.pkl
 outputs/
 trained_models/
+
+# DiffPoseTalk, not redistributed (see README)
+src/kmspeaker/models/diffpose/common.py
