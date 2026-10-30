@@ -40,9 +40,11 @@ KM-Speaker is a high-fidelity speech-driven 3D facial animation model designed t
 
 5. Add the third-party DiffPoseTalk helpers:
 
-    Our main paper results use two small building blocks from [DiffPoseTalk](https://github.com/DiffPoseTalk/DiffPoseTalk): `PositionalEncoding` and `enc_dec_mask`. The codebase expects them in `src/kmspeaker/models/diffpose/common.py`; please copy them from [`models/common.py`](https://github.com/DiffPoseTalk/DiffPoseTalk/blob/main/models/common.py).
+    Our main paper results use the `PositionalEncoding` and `enc_dec_mask` functions from [DiffPoseTalk](https://github.com/DiffPoseTalk/DiffPoseTalk). Please copy them from [`models/common.py`](https://github.com/DiffPoseTalk/DiffPoseTalk/blob/main/models/common.py) into `src/kmspeaker/models/diffpose/common.py`. This file is listed in `.gitignore` to avoid redistributing DiffPoseTalk code.
 
     Please also cite DiffPoseTalk if you use this code.
+
+
 
 ## Setup
 
